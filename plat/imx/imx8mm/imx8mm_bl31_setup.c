@@ -308,10 +308,12 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 
 	bl31_tzc380_setup();
 
+#ifdef ASSIGN_M4_DOM1
 	/* Assign M4 to domain 1 */
 	mmio_write_32(IMX_RDC_BASE + 0x204, 0x1);
 	mmio_write_32(IMX_RDC_BASE + 0x518, 0xfc);
 	mmio_write_32(IMX_RDC_BASE + 0x5A4, 0xf3);
+#endif
 
 #if defined (CSU_RDC_TEST)
 	csu_test();
