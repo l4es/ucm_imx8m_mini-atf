@@ -574,6 +574,14 @@ void imx_anamix_post_resume(void)
 #define GPR_TZASC_EN		(1 << 0)
 #define GPR_TZASC_EN_LOCK	(1 << 16)
 
+#define CFG_TEE_RESERVED_SIZE 0x02000000
+
+#define  CFG_SHMEM_SIZE 0x100000
+
+#define  CFG_TZDRAM_SIZE  (CFG_TEE_RESERVED_SIZE - CFG_SHMEM_SIZE)
+
+#define  CFG_SHMEM_START (BL32_BASE + CFG_TZDRAM_SIZE)
+
 static void imx8mm_tz380_init(void)
 {
 	unsigned int val;
@@ -584,8 +592,27 @@ static void imx8mm_tz380_init(void)
 
 	tzc380_init(IMX_TZASC_BASE);
 
-	/* Enable 1G-5G S/NS RW */
-	tzc380_configure_region(0, 0x00000000, TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) | TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+        tzc380_configure_region(1, 0x00000000,
+                        TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_8G) |
+                        TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
+
+        tzc380_configure_region(2, (BL32_BASE - IMX_DDR_BASE),
+                        TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
+                        TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
+        tzc380_configure_region(3, (CFG_SHMEM_START - IMX_DDR_BASE),
+                        TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
+                        TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+
+#ifdef CFG_DRM_SECURE_DATA_PATH
+        tzc380_configure_region(4, CFG_TEE_SDP_MEM_BASE - IMX_DDR_BASE,
+                        TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
+                        TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+        /* Decoded buffer size is 128MB */
+        tzc380_configure_region(5, CFG_RDC_DECODED_BUFFER - IMX_DDR_BASE,
+                        TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_128M) |
+                        TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+#endif
+
 }
 
 void noc_wrapper_pre_suspend(unsigned int proc_num)
